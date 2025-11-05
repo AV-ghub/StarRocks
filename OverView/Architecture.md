@@ -27,7 +27,26 @@ _**Only a query optimizer excellent enough**_ can choose a relatively optimal qu
 
 The CBO enables StarRocks to deliver _**better multi-table join query performance**_ than competitors, especially in complex multi-table join queries.
 
+## [Real-time, updatable columnar storage engine](https://docs.starrocks.io/docs/introduction/Features/#real-time-updatable-columnar-storage-engine)
 
+StarRocks' storage engine guarantees the _**atomicity, consistency, isolation, and durability (ACID)**_ of each data ingestion operation.  
+For a data loading transaction, the _**entire transaction either succeeds or fails**_.   
+Concurrent transactions do not affect each other, providing _**transaction-level isolation**_.  
+
+StarRocks' storage engine uses the _**Delete-and-insert pattern**_, which allows for efficient _**Partial Update and Upsert**_ operations.   
+The storage engine can quickly _**filter data using primary key indexes**_, eliminating the need for Sort and Merge operations at data reading.   
+The engine can also make _**full use of secondary indexes**_.   
+It delivers fast and predictable query performance even on _**huge volume of data updates**_.
+
+## [Intelligent materialized view](https://docs.starrocks.io/docs/introduction/Features/#intelligent-materialized-view)
+
+StarRocks' materialized views _**automatically update data**_ according to the data changes in the base table without requiring additional maintenance operations.   
+In addition, the _**selection of materialized views is also automatic**_.   
+If StarRocks identifies a suitable materialized view (MV) to improve query performance, it will _**automatically rewrite the query to utilize the MV**_. 
+
+Raw data can be used to _**create a normalized table based on an external MV**_.   
+A _**denormalized table can be created from normalized**_ tables through asynchronous materialized views.    
+_**Another MV can be created from normalized tables**_.
 
 
 
