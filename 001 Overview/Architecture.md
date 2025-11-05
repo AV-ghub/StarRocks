@@ -48,6 +48,15 @@ Raw data can be used to _**create a normalized table based on an external MV**_.
 A _**denormalized table can be created from normalized**_ tables through asynchronous materialized views.    
 _**Another MV can be created from normalized tables**_.
 
+## [Data lake analytics](https://docs.starrocks.io/docs/introduction/Features/#data-lake-analytics)
+
+One of the key features of StarRocks is its _**external catalog**_, which acts as a linkage to an externally maintained metastore.  
+This functionality provides users with the capability to _**query external data sources seamlessly, eliminating the need for data migration**_.  
+As such, users can analyze data from different systems such as HDFS and Amazon S3, in _**various file formats**_ such as Parquet, ORC, and CSV, etc.
+
+
+
+
 
 
 
