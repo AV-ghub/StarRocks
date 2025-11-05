@@ -12,3 +12,29 @@ The vectorized execution engine also makes _**full use of SIMD instructions**_.
 This engine can complete _**more data operations with fewer instructions**_.   
 Tests against standard datasets show that this engine enhances the overall performance of operators by _**3 to 10 times**_.   
 
+StarRocks uses the Operation on _**Encoded Data technology to directly execute operators on encoded strings**_, without the need for decoding.   
+This noticeably reduces SQL complexity and increases the query speed by more than _**2 times**_.  
+
+## [Separation of storage and compute](https://docs.starrocks.io/docs/introduction/Features/#separation-of-storage-and-compute)
+
+Computing and storage are decoupled and can be _**scaled independently**_.   
+Computing can _**dynamically scale within seconds**_, improving resource utilization, especially when there are noticeable traffic peaks and valleys.  
+
+## [Cost-based optimizer](https://docs.starrocks.io/docs/introduction/Features/#cost-based-optimizer)
+
+_**Execution engines alone cannot deliver superior performance because the complexity**_ of execution plans may vary by several orders of magnitude in multi-table join query scenarios. The more the associated tables, the more the execution plans, which makes it NP-_**hard to choose an optimal plan**_.   
+_**Only a query optimizer excellent enough**_ can choose a relatively optimal query plan for efficient **multi-table analytics**.
+
+The CBO enables StarRocks to deliver _**better multi-table join query performance**_ than competitors, especially in complex multi-table join queries.
+
+
+
+
+
+
+
+
+
+
+
+
