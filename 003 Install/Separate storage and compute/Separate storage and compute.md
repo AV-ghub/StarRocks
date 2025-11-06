@@ -124,11 +124,11 @@ Error response from daemon: failed to set up container networking: driver failed
 
 1.  **Остановите и удалите текущие контейнеры.** Выполните команду в директории с `docker-compose.yml`:
     ```bash
-    docker compose down
+    sudo docker compose down
     ```
 2.  **Запустите контейнеры заново:**
     ```bash
-    docker compose up -d
+    sudo docker compose up -d
     ```
     Теперь MinIO должен запуститься без ошибок, а его веб-интерфейс будет доступен по адресу `http://localhost:9901`, а S3 API — на порту `9900`.
 
