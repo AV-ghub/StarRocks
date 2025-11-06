@@ -1,4 +1,9 @@
 # [Separate storage and compute](https://docs.starrocks.io/docs/quick_start/shared-data/)
+
+Hot _**data is cached locally**_ and When the cache is hit, the query performance is comparable to that of storage-compute coupled architecture.  
+Compute nodes _**(CN) can be added**_ or removed on demand _**within seconds**_.  
+This architecture _**reduces storage cost**_, ensures _**better resource isolation**_, and provides _**elasticity and scalability**_.
+
 ## Prerequisites
 4 GB RAM assigned to Docker
 ```
@@ -29,9 +34,142 @@ df -h /dev/mapper/almalinux_igonin--vl-root
 Файловая система                      Размер Использовано  Дост Использовано% Cмонтировано в
 /dev/mapper/almalinux_igonin--vl-root    70G          32G   39G           46% /
 ```
+## [Установка](https://docs.starrocks.io/docs/quick_start/shared-data/#deploy-starrocks-and-minio)
+В процессе установки у нас проблема
+```
+[+] Running 4/5
+ ✔ Network ssc_default       Created                                                                                                                                                                       4.0s 
+ ⠼ Container minio           Starting                                                                                                                                                                     74.9s 
+ ✔ Container starrocks-fe    Created                                                                                                                                                                       0.2s 
+ ✔ Container ssc-minio_mc-1  Created                                                                                                                                                                       0.2s 
+ ✔ Container starrocks-cn    Created                                                                                                                                                                       0.3s 
+Error response from daemon: failed to set up container networking: driver failed programming external connectivity on endpoint minio (5c65c33ad8dff4293f10a18ae3c1d193d6cd19c4022b352a2d80fccbc3e39add): failed to bind host port for 0.0.0.0:9000:172.19.0.2:9000/tcp: address already in use
+```
+что понятно, ибо у нас ClickHouse.  
+Далее.   
+
+Ошибка `address already in use` возникает, когда порт 9000 на вашей машине уже занят другим процессом (в вашем случае — ClickHouse).  
+Решается это изменением конфигурации портов в файле `docker-compose.yml`.
+
+### 🔍 Проверка занятых портов
+
+Чтобы убедиться, что порт 9000 занят, и найти свободные порты, можно использовать следующие команды.
+
+- **Проверить, какой процесс использует порт 9000:**
+    ```bash
+    sudo lsof -i :9000
+    COMMAND    PID       USER   FD   TYPE    DEVICE SIZE/OFF NODE NAME
+    clickhous 8331 clickhouse   43u  IPv4 145100358      0t0  TCP *:cslistener (LISTEN)
+    ```
+    Или, если `lsof` не установлен:
+    ```bash
+    sudo netstat -tulpn | grep :9000
+    tcp        0      0 0.0.0.0:9000            0.0.0.0:*               LISTEN      8331/clickhouse-ser 
+    ```
+    Команда покажет PID и имя процесса, который занял порт.
+  
+- **Проверить свободные порты:**
+  ```
+  sudo netstat -tulpn | grep :9
+  tcp        0      0 0.0.0.0:9030            0.0.0.0:*               LISTEN      855130/docker-proxy 
+  tcp        0      0 0.0.0.0:9009            0.0.0.0:*               LISTEN      8331/clickhouse-ser 
+  tcp        0      0 0.0.0.0:9002            0.0.0.0:*               LISTEN      478156/docker-proxy 
+  tcp        0      0 0.0.0.0:9001            0.0.0.0:*               LISTEN      478138/docker-proxy 
+  tcp        0      0 0.0.0.0:9000            0.0.0.0:*               LISTEN      8331/clickhouse-ser 
+  tcp        0      0 0.0.0.0:9005            0.0.0.0:*               LISTEN      8331/clickhouse-ser 
+  tcp        0      0 0.0.0.0:9004            0.0.0.0:*               LISTEN      8331/clickhouse-ser 
+  tcp        0      0 0.0.0.0:9901            0.0.0.0:*               LISTEN      478181/docker-proxy 
+  tcp        0      0 0.0.0.0:9900            0.0.0.0:*               LISTEN      478453/docker-proxy 
+  ```
+  ```
+  sudo netstat -tulpn | grep :8
+  tcp        0      0 0.0.0.0:8030            0.0.0.0:*               LISTEN      855074/docker-proxy 
+  tcp        0      0 0.0.0.0:8040            0.0.0.0:*               LISTEN      855115/docker-proxy 
+  tcp        0      0 0.0.0.0:8085            0.0.0.0:*               LISTEN      478624/docker-proxy 
+  tcp        0      0 0.0.0.0:8123            0.0.0.0:*               LISTEN      8331/clickhouse-ser 
+  tcp        0      0 0.0.0.0:8113            0.0.0.0:*               LISTEN      479376/docker-proxy 
+  tcp        0      0 0.0.0.0:8112            0.0.0.0:*               LISTEN      479359/docker-proxy 
+  ```
+  
+- **Проверить статус ClickHouse:**
+    ```bash
+    sudo systemctl status clickhouse-server
+    ```
+
+### 🛠️ Исправление конфигурации Docker Compose
+
+Чтобы устранить конфликт, нужно изменить маппинг портов для MinIO в файле `docker-compose.yml`, скачанный для установки StarRocks.
+
+1.  **Откройте файл `docker-compose.yml`** в текстовом редакторе.
+2.  **Найдите секцию, описывающую сервис `minio`.** Она будет выглядеть примерно так:
+    ```yaml
+    minio:
+      # ... другие параметры ...
+      ports:
+        - 9001:9001
+        - 9000:9000
+    ```
+3.  **Измените внешний порт для `9000`** на любой свободный (например, `9500`):
+    ```yaml
+      ports:
+        - 9501:9001
+        - 9500:9000  # Изменяем левую часть (хост:контейнер)
+    ```
+    Это означает, что порт 9000 внутри контейнера MinIO будет доступен на вашей машине через порт 9500.
+4.  **Сохраните файл.**
+
+### 🔄 Перезапуск установки
+
+После внесения изменений необходимо полностью пересоздать окружение, так как простое изменение файла не обновит уже созданные контейнеры.
+
+1.  **Остановите и удалите текущие контейнеры.** Выполните команду в директории с `docker-compose.yml`:
+    ```bash
+    docker compose down
+    ```
+2.  **Запустите контейнеры заново:**
+    ```bash
+    docker compose up -d
+    ```
+    Теперь MinIO должен запуститься без ошибок, а его веб-интерфейс будет доступен по адресу `http://localhost:9901`, а S3 API — на порту `9900`.
+
+### 💡 Дополнительные замечания
+
+- **Проверьте другие порты:** Убедитесь, что другие порты, которые использует StarRocks (9030, 8030, 8040), также свободны. При необходимости их можно аналогичным образом переназначить в секциях сервисов `starrocks-fe` и `starrocks-be` в том же файле `docker-compose.yml`.
+- **Обновите конфигурацию:** После изменения порта MinIO не забудьте использовать новый порт (`9900`) во всех последующих шагах руководства, например, при создании `STORAGE VOLUME` в StarRocks.
 
 
-Hot _**data is cached locally**_ and When the cache is hit, the query performance is comparable to that of storage-compute coupled architecture.  
-Compute nodes _**(CN) can be added**_ or removed on demand _**within seconds**_.  
-This architecture _**reduces storage cost**_, ensures _**better resource isolation**_, and provides _**elasticity and scalability**_.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
