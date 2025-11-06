@@ -279,7 +279,22 @@ sudo docker compose down --remove-orphans --volumes
 # Запускаем заново
 sudo docker compose up -d
 ```
+### Правильный вывод
+```
+sudo docker compose up -d
+[+] Running 5/5
+ ✔ Network ssc_default       Created                                                                                                                                                                       0.1s 
+ ✔ Container minio           Healthy                                                                                                                                                                       7.1s 
+ ✔ Container starrocks-fe    Healthy                                                                                                                                                                      27.9s 
+ ✔ Container ssc-minio_mc-1  Started                                                                                                                                                                       6.3s 
+ ✔ Container starrocks-cn    Started                                                                                                                                                                      28.2s 
+[admin@dbcs01 ssc]$ sudo docker compose ps
+NAME           IMAGE                            COMMAND                  SERVICE        CREATED         STATUS                        PORTS
+minio          minio/minio:latest               "sh -c 'mkdir -p /mi…"   minio          2 minutes ago   Up 2 minutes (healthy)        0.0.0.0:9500->9000/tcp, [::]:9500->9000/tcp, 0.0.0.0:9501->9001/tcp, [::]:9501->9001/tcp
+starrocks-cn   starrocks/cn-ubuntu:3.5-latest   "/bin/bash -c 'sleep…"   starrocks-cn   2 minutes ago   Up About a minute (healthy)   0.0.0.0:8540->8040/tcp, [::]:8540->8040/tcp
+starrocks-fe   starrocks/fe-ubuntu:3.5-latest   "/bin/bash -c 'echo …"   starrocks-fe   2 minutes ago   Up About a minute (healthy)   0.0.0.0:8530->8030/tcp, [::]:8530->8030/tcp, 0.0.0.0:9520->9020/tcp, [::]:9520->9020/tcp, 0.0.0.0:9530->9030/tcp, [::]:9530->9030/tcp
 
+```
 
 
 
