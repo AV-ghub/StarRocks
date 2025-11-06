@@ -259,7 +259,11 @@ Error response from daemon: failed to set up container networking: driver failed
 > ### Далее везде по ходу установки не забываем корректировать 9* и 8* на 95* и 85* соотв
 
 
-
+### Зайти в контейнер снаружи
+Из какталога с конфигурационным файликом (`docker-compose.yml`)
+```
+sudo docker compose exec -it starrocks-fe /bin/bash
+```
 
 
 
