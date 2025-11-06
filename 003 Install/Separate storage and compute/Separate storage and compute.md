@@ -116,7 +116,126 @@ Error response from daemon: failed to set up container networking: driver failed
         - 9500:9000  # Изменяем левую часть (хост:контейнер)
     ```
     Это означает, что порт 9000 внутри контейнера MinIO будет доступен на вашей машине через порт 9500.
-4.  **Сохраните файл.**
+
+    Итого, конечный вид yml файла
+    ```
+    services:
+    minio:
+      container_name: minio
+      environment:
+        MINIO_ROOT_USER: miniouser
+        MINIO_ROOT_PASSWORD: miniopassword
+      image: minio/minio:latest
+      ports:
+        - "9501:9001"
+        - "9500:9000"
+      entrypoint: sh
+      command: '-c ''mkdir -p /minio_data/starrocks && minio server /minio_data --console-address ":9001"'''
+      healthcheck:
+        test: ["CMD", "mc", "ready", "local"]
+        interval: 5s
+        timeout: 5s
+        retries: 5
+  
+    minio_mc:
+      # This service is short lived, it does this:
+      # - starts up
+      # - checks to see if the MinIO service `minio` is ready
+      # - creates a MinIO Access Key that the StarRocks services will use
+      # - exits
+      image: minio/mc:latest
+      entrypoint:
+        - sh
+        - -c
+        - |
+          until mc ls minio > /dev/null 2>&1; do
+            sleep 0.5
+          done
+  
+          mc alias set myminio http://minio:9000 miniouser miniopassword
+          mc admin user svcacct add --access-key AAAAAAAAAAAAAAAAAAAA \
+          --secret-key BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB \
+          myminio \
+          miniouser
+      depends_on:
+          minio:
+            condition: service_healthy
+  
+    starrocks-fe:
+      image: starrocks/fe-ubuntu:3.5-latest
+      hostname: starrocks-fe
+      container_name: starrocks-fe
+      user: root
+      command:
+        - /bin/bash
+        - -c
+        - |
+          echo "# enable shared data, set storage type, set endpoint" >> /opt/starrocks/fe/conf/fe.conf
+          echo "run_mode = shared_data" >> /opt/starrocks/fe/conf/fe.conf
+          echo "cloud_native_storage_type = S3" >> /opt/starrocks/fe/conf/fe.conf
+          echo "aws_s3_endpoint = minio:9000" >> /opt/starrocks/fe/conf/fe.conf
+  
+          echo "# set the path in MinIO" >> /opt/starrocks/fe/conf/fe.conf
+          echo "aws_s3_path = starrocks" >> /opt/starrocks/fe/conf/fe.conf
+  
+          echo "# credentials for MinIO object read/write" >> /opt/starrocks/fe/conf/fe.conf
+          echo "aws_s3_access_key = AAAAAAAAAAAAAAAAAAAA" >> /opt/starrocks/fe/conf/fe.conf
+          echo "aws_s3_secret_key = BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB" >> /opt/starrocks/fe/conf/fe.conf
+          echo "aws_s3_use_instance_profile = false" >> /opt/starrocks/fe/conf/fe.conf
+          echo "aws_s3_use_aws_sdk_default_behavior = false" >> /opt/starrocks/fe/conf/fe.conf
+  
+          echo "# Set this to false if you do not want default" >> /opt/starrocks/fe/conf/fe.conf
+          echo "# storage created in the object storage using" >> /opt/starrocks/fe/conf/fe.conf
+          echo "# the details provided above" >> /opt/starrocks/fe/conf/fe.conf
+          echo "enable_load_volume_from_conf = true" >> /opt/starrocks/fe/conf/fe.conf
+  
+          /opt/starrocks/fe/bin/start_fe.sh --host_type FQDN
+      ports:
+        - 8530:8030
+        - 9520:9020
+        - 9530:9030
+      healthcheck:
+        test: 'mysql -u root -h starrocks-fe -P 9030 -e "show frontends\G" |grep "Alive: true"'
+        interval: 10s
+        timeout: 5s
+        retries: 3
+      depends_on:
+          minio:
+              condition: service_healthy
+  
+    starrocks-cn:
+      image: starrocks/cn-ubuntu:3.5-latest
+      command:
+        - /bin/bash
+        - -c
+        - |
+          sleep 15s;
+          ulimit -u 65535;
+          ulimit -n 65535;
+          mysql --connect-timeout 2 -h starrocks-fe -P9030 -uroot -e "ALTER SYSTEM ADD COMPUTE NODE \"starrocks-cn:9050\";"
+          /opt/starrocks/cn/bin/start_cn.sh
+      environment:
+        - HOST_TYPE=FQDN
+      ports:
+        - 8540:8040
+      hostname: starrocks-cn
+      container_name: starrocks-cn
+      user: root
+      depends_on:
+        starrocks-fe:
+          condition: service_healthy
+          restart: true
+        minio:
+          condition: service_healthy
+      healthcheck:
+        test: 'mysql -u root -h starrocks-fe -P 9030 -e "SHOW COMPUTE NODES\G" |grep "Alive: true"'
+        interval: 10s
+        timeout: 5s
+        retries: 3
+    ```
+
+    
+5.  **Сохраните файл.**
 
 ### 🔄 Перезапуск установки
 
