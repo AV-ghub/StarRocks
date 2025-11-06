@@ -264,7 +264,10 @@ Error response from daemon: failed to set up container networking: driver failed
 ```
 sudo docker compose exec -it starrocks-fe /bin/bash
 ```
-
+Далее смотрим `cd /opt/starrocks/fe/conf/`
+```
+cat fe.conf 
+```
 
 
 
