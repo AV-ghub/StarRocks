@@ -269,7 +269,16 @@ sudo docker compose exec -it starrocks-fe /bin/bash
 cat fe.conf 
 ```
 
-
+### 🔧 Если нужно пересоздать всё заново
+bash
+```
+# Останавливаем и удаляем всё
+sudo docker compose down --remove-orphans --volumes
+```
+```
+# Запускаем заново
+sudo docker compose up -d
+```
 
 
 
