@@ -1,6 +1,6 @@
 # [Colocate Table](https://docs.starrocks.io/docs/best_practices/query_tuning/schema_tuning/#colocate-table)
 ```
-подскажи пожалуйста, вот тут https://docs.starrocks.io/docs/best_practices/query_tuning/schema_tuning/#colocate-table
+вот тут https://docs.starrocks.io/docs/best_practices/query_tuning/schema_tuning/#colocate-table
 что подразумевается под common bucketing column?
 можно наглядный пример скрипта создания двух таблиц, которые будут в итоге работать через Colocate join?
 ```
