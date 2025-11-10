@@ -4,6 +4,8 @@
 что подразумевается под common bucketing column?
 можно наглядный пример скрипта создания двух таблиц, которые будут в итоге работать через Colocate join?
 ```
+[Логическая и физическая иерархия данных в StarRocks](https://github.com/AV-ghub/StarRocks/blob/main/001%20Overview/%D0%A4%D0%B8%D0%B7%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B5%20%D0%B8%20%D0%BB%D0%BE%D0%B3%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B5%20%D1%81%D1%82%D1%80%D1%83%D0%BA%D1%82%D1%83%D1%80%D1%8B.md)
+
 Пример создания двух таблиц для Colocate Join в StarRocks, где `user_id` является `common bucketing column`:
 
 ```sql
