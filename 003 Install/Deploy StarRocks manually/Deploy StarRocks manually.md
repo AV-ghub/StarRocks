@@ -4,3 +4,8 @@
 SQL Error [1064] [42000]: Getting analyzing error. Detail message: Cluster has no available capacity.
   Getting analyzing error. Detail message: Cluster has no available capacity.
 ```
+### Ставим MySql
+```
+sudo apt update
+sudo apt install default-mysql-client
+```
