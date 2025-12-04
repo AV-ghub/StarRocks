@@ -42,14 +42,10 @@
 ### 📊 Схема архитектуры: Flink CDC YAML vs. Flink CDC Connectors + Flink SQL
 ```mermaid
 flowchart TD
-    subgraph SRC [Источник данных]
-        PG[(PostgreSQL)]
-    end
-
     subgraph FLINK_YAML [Стек: Flink CDC 3.5 YAML Pipeline]
         A1[Конфиг-файл<br>.yaml] --> A2[Утилита<br>flink-cdc.sh]
         A2 --> A3{Сборка<br>Flink Job}
-        A3 --> A4[Автоматическое создание<br>1. Источника (CDC Connector)<br>2. Приёмника<br>3. Пайплайна DDL синхронизации]
+        A3 --> A4[Автоматическое создание<br>1. Источника CDC Connector<br>2. Приёмника<br>3. Пайплайна DDL синхронизации]
     end
 
     subgraph FLINK_CLASSIC [Стек: Flink CDC Connectors + Flink SQL]
