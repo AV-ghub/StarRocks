@@ -17,17 +17,17 @@
 
 ```mermaid
 flowchart LR
-    subgraph S1 [Схема 1: Встроенный CDC (Flink CDC Connectors)]
+    subgraph S1[Схема1_Встроенный_CDC]
         direction TB
         A1[(PostgreSQL)] --> B1[Flink CDC<br>PostgreSQL Connector]
         B1 -- Встроенный движок Debezium --> C1[Задание Flink<br>SQL/DataStream API]
     end
 
-    subgraph S2 [Схема 2: Kafka-центричная (Debezium + Kafka Connect)]
+    subgraph S2[Схема 2: Kafka-центричная]
         direction TB
         A2[(PostgreSQL)] --> B2[Debezium<br>Kafka Connect Connector]
         B2 --> C2[Apache Kafka]
-        C2 --> D2[Flink (Kafka Connector)]
+        C2 --> D2[Flink]
     end
 
     style S1 stroke:#2E86C1,stroke-width:2px
