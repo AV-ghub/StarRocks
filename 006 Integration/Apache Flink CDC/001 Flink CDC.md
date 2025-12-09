@@ -7,3 +7,4 @@
 #### [Best Practices for Flink CDC YAML in Realtime Compute for Apache Flink](https://www.alibabacloud.com/blog/best-practices-for-flink-cdc-yaml-in-realtime-compute-for-apache-flink_602102)
 #### [Оптимизация производительности Flink (arenadata)](https://docs.arenadata.io/ru/ADH/current/how-to/flink/flink-performance.html)
 #### [Примеры использования PyFlink (arenadata)](https://docs.arenadata.io/ru/ADH/current/how-to/flink/pyflink.html)
+#### [Обзор работы Flink (arenadata)](https://docs.arenadata.io/ru/ADH/current/concept/flink/flink-work.html)
