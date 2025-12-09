@@ -5,5 +5,5 @@
 #### [Потоковый захват изменений из PostgreSQL/MySQL с помощью Apache Flink](https://habr.com/ru/companies/neoflex/articles/567930/)
 #### [Flink CDC for Postgres: Lessons Learned](https://sap1ens.com/blog/2022/07/10/flink-cdc-for-postgres-lessons-learned/)  [recap --->](https://github.com/AV-ghub/StarRocks/blob/main/006%20Integration/Apache%20Flink%20CDC/006%20Flink%20CDC%20for%20Postgres%3A%20Lessons%20Learned.md)
 #### [Best Practices for Flink CDC YAML in Realtime Compute for Apache Flink](https://www.alibabacloud.com/blog/best-practices-for-flink-cdc-yaml-in-realtime-compute-for-apache-flink_602102)
-#### [Оптимизация производительности Flink](https://docs.arenadata.io/ru/ADH/current/how-to/flink/flink-performance.html)
+#### [Оптимизация производительности Flink (arenadata)](https://docs.arenadata.io/ru/ADH/current/how-to/flink/flink-performance.html)
 #### [Примеры использования PyFlink (arenadata)](https://docs.arenadata.io/ru/ADH/current/how-to/flink/pyflink.html)
