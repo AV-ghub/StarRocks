@@ -3,4 +3,4 @@
 #### [Синхронизация данных с Flink CDC 3.0 (с поддержкой изменения схемы)](https://docs.starrocks.io/docs/loading/Flink-connector-starrocks/#synchronize-data-with-flink-cdc-30-with-schema-change-supported)
 #### [Flink CDC Connectors](https://github.com/ververica/flink-cdc-connectors)
 #### [Потоковый захват изменений из PostgreSQL/MySQL с помощью Apache Flink](https://habr.com/ru/companies/neoflex/articles/567930/)
-#### [Flink CDC for Postgres: Lessons Learned](https://sap1ens.com/blog/2022/07/10/flink-cdc-for-postgres-lessons-learned/)  [...](https://github.com/AV-ghub/StarRocks/blob/main/006%20Integration/Apache%20Flink%20CDC/006%20Flink%20CDC%20for%20Postgres%3A%20Lessons%20Learned.md)
+#### [Flink CDC for Postgres: Lessons Learned](https://sap1ens.com/blog/2022/07/10/flink-cdc-for-postgres-lessons-learned/)  [--->](https://github.com/AV-ghub/StarRocks/blob/main/006%20Integration/Apache%20Flink%20CDC/006%20Flink%20CDC%20for%20Postgres%3A%20Lessons%20Learned.md)
