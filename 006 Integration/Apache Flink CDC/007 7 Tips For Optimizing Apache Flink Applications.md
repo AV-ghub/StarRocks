@@ -95,7 +95,7 @@ flowchart LR
         State_Backend[State Backend<br>управляет состоянием]
     end
 
-    subgraph External_Storage[Внешнее хранилище (HDFS/S3)]
+    subgraph External_Storage[Внешнее хранилище <HDFS/S3>]
         Checkpoint_Files[Файлы контрольных точек]
     end
 
