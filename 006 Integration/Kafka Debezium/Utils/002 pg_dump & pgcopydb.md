@@ -868,3 +868,52 @@ pgcopydb copy tables \
 - Минимизировать влияние на продакшен
 - Интегрироваться с Debezium CDC
 - Автоматически чанковать большие таблицы
+
+# Материалы по pgcopydb
+The main resource for learning about `pgcopydb` is its official documentation, which is comprehensive and includes tutorials and command references. You can also find helpful discussions and real-world examples on community websites and in the project's source code.
+
+Here is a summary of the best resources available:
+
+| Resource Type | Source / Link | What It's Good For |
+| :--- | :--- | :--- |
+| **Official Documentation** | [pgcopydb.readthedocs.io](https://pgcopydb.readthedocs.io/)  | Core concepts, all command references, and step-by-step tutorials. |
+| **Official Tutorials** | [Tutorial Section](https://pgcopydb.readthedocs.io/en/latest/tutorial.html)  | Practical guides for key use cases, including CDC and schema editing. |
+| **Source Code & Issues** | [GitHub Repository](https://github.com/dimitri/pgcopydb)  | Latest code, releases, and discussions about bugs and features. |
+| **Community Articles** | [Mydbops Blog (2022)](https://www.mydbops.com/blog/faster-logical-backup-restore-using-pgcopydb---postgresql)  | Explains benefits and includes a performance comparison with `pg_dump`. |
+| **Man Pages** | [Debian Manpage](https://manpages.debian.org/testing/pgcopydb/pgcopydb%20fork.1.en.html)  | Detailed technical specifications for the `clone`/`fork` command and its options. |
+
+### 📚 Key Topics Covered in the Documentation
+The official documentation is structured well for learning. Here are some sections particularly relevant to our earlier discussion:
+*   **Change Data Capture (CDC)**: The documentation details how to use the `--follow` option with `pgcopydb clone` for online migrations with minimal downtime, explaining concepts like the prefetch and replay modes.
+*   **Schema Editing During Migration**: A tutorial shows how to split the migration process to inject custom SQL (like schema changes) between the pre-data restore and data copy steps.
+*   **Filtering and Resuming**: You can copy specific tables using filters (`--filters` option) and resume operations after an interruption (`--resume` option).
+
+### 💡 How to Approach Learning
+1.  **Start with the "Tutorial" Section**: This is the best place to begin. It provides concrete, copy-paste examples for common tasks like a simple clone or a CDC migration.
+2.  **Use `pgcopydb help`**: The tool itself is very self-documenting. Running `pgcopydb help` and `pgcopydb help <command>` in your terminal will give you immediate, detailed information about all options.
+3.  **Review the Feature Highlights**: The documentation page on "Feature Highlights" offers a great technical deep dive into how `pgcopydb` achieves concurrency, handles large objects, and implements its CDC logic.
+
+Since you're specifically interested in using `pgcopydb` for creating a consistent snapshot before starting a Debezium CDC stream, I recommend focusing on the tutorial for **"Follow mode, or Change Data Capture"** and the detailed manual for the `pgcopydb clone` command, paying close attention to the `--snapshot` and `--follow` flags.
+
+
+Основным источником на русском является перевод официальной документации, а главная информация на английском не потеряла актуальности. В таблице ниже собраны все доступные источники.
+
+| Ресурс | Язык | Что полезно / Ограничения |
+| :--- | :--- | :--- |
+| **Перевод документации от Tantor SE-1C** | 🇷🇺 Русский | **Основные функции, сравнение с `pg_dump`**, основы работы. Лучший старт для чтения на русском, но перевод может отставать от версии инструмента. |
+| **Официальная документация (Read the Docs)** | 🇬🇧 Английский | **Полная и актуальная информация**: все команды, туториалы (включая CDC), best practices. Главный источник для углубленного изучения. |
+| **Доклад на конференции (видео)** | 🇷🇺 Русский | **Видео выступления автора (Dimitri Fontaine)**. Хорошо для понимания философии и возможностей инструмента. Нет текстового руководства. |
+| **Репозиторий на GitHub** | 🇬🇧 Английский | Исходный код, `README` с кратким введением и примером. Не заменяет документацию. |
+
+### 📖 Как эффективно использовать эти материалы
+Опираясь на ваши предыдущие вопросы о Debezium и миграции, вот план изучения:
+
+1.  **Начните с перевода**. Изучите разделы "Основные функции pgcopydb" и "Изменение захвата данных", чтобы закрепить русскоязычные термины и общее понимание.
+2.  **Перейдите к официальным туториалам на английском**. Особенно важен раздел **"Follow mode, or Change Data Capture"**, который напрямую отвечает на ваш вопрос о получении снапшота и запуске непрерывной репликации.
+3.  **Посмотрите видео-доклад**. Это поможет увидеть инструмент "вживую" от его создателя.
+4.  **Для конкретных команд и сложных сценариев** обращайтесь к полной справке по командам (`pgcopydb help <command>`) и разделу `pgcopydb` в документации.
+
+### 💡 Советы для работы с Debezium и миграцией
+*   **CDC (Change Data Capture)**: В `pgcopydb` это реализуется через ключ `--follow` у команды `clone`, который использует логическое декодирование WAL.
+*   **Выбор таблиц**: Как мы обсуждали ранее, вы можете копировать не всю БД, а конкретные таблицы. В документации эта тема раскрывается в контексте фильтрации (`--filter`).
+
