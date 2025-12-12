@@ -311,6 +311,8 @@ def migrate_with_pgcopydb():
 3. **Загрузка:** Parallel load чанков в StarRocks
 4. **Синхронизация:** Routine Load с точного offset
 
+-------------------------------------------------------------------------------------------------------------------------------------
+
 # Лицензия pgcopydb
 **Да, pgcopydb полностью бесплатный и открытый!**
 
@@ -527,3 +529,342 @@ pgcopydb clone \
 **Стоимость:** $0 за инструмент + время вашего инженера.
 
 **Проверьте лицензию сами:** https://github.com/dimitri/pgcopydb/blob/master/LICENSE
+
+-------------------------------------------------------------------------------------------------------------
+
+## **1. Как pgcopydb блокирует данные источника?**
+
+**Короткий ответ:** **Минимально и кратковременно**, в отличие от `pg_dump` который может блокировать надолго.
+
+### **Детали блокировок по этапам:**
+
+#### **Этап 1: Создание снапшота**
+```bash
+pgcopydb snapshot --source "$SOURCE"
+```
+**Что делает:**
+```sql
+-- Использует pg_export_snapshot() - БЕЗ БЛОКИРОВКИ!
+SELECT pg_export_snapshot();  -- Возвращает: '0000000A-12345678'
+-- Эта команда создает точку консистентности,
+-- но НЕ блокирует другие транзакции!
+```
+
+#### **Этап 2: Копирование данных**
+**Для каждой таблицы:**
+```sql
+-- 1. Берет ACCESS SHARE LOCK на таблицу (очень слабая блокировка)
+-- Это то же самое, что делает обычный SELECT
+-- Разрешает: SELECT, INSERT, UPDATE, DELETE
+-- Блокирует только: DROP TABLE, ALTER TABLE, VACUUM FULL
+
+-- 2. Делает копирование чанками
+COPY (
+  SELECT * FROM huge_table 
+  WHERE ctid >= '(0,0)' AND ctid < '(1000,0)'
+) TO '/chunk1.csv';
+```
+
+**Вот ключевое отличие от pg_dump:**
+
+| Действие | `pg_dump` | `pgcopydb` |
+|----------|-----------|------------|
+| **Блокировка на всю таблицу** | Да, на время всей таблицы | Нет, только на чанк |
+| **Размер блокировки** | Вся таблица | 1 чанк (например, 100к строк) |
+| **Время удержания** | Часы для больших таблиц | Секунды-минуты на чанк |
+| **Влияние на автовакуум** | Может блокировать | Практически не блокирует |
+
+### **Конкретный пример с 1 млрд строк:**
+
+```sql
+-- pg_dump делает:
+LOCK TABLE huge_table IN ACCESS SHARE MODE;  -- Блокировка НА ВСЁ ВРЕМЯ
+COPY huge_table TO '/dump.csv';  -- 2 часа с блокировкой
+
+-- pgcopydb делает:
+-- Чанк 1:
+COPY (SELECT * FROM huge_table WHERE id BETWEEN 1 AND 1000000) TO '/chunk1.csv';
+-- Блокировка снимается сразу после чанка
+
+-- Чанк 2:
+COPY (SELECT * FROM huge_table WHERE id BETWEEN 1000001 AND 2000000) TO '/chunk2.csv';
+-- И т.д.
+```
+
+### **Визуализация блокировок:**
+
+```
+Время: 0s     10s    20s    30s    40s    50s    1m
+pg_dump: [######################## БЛОКИРОВКА ########################]
+pgcopydb: [# чанк1 #][# чанк2 #][# чанк3 #][ пауза ][# чанк4 #][# чанк5 #]
+Приложение:      ✓ INSERT      ✓ UPDATE      ✓ SELECT      ✓ VACUUM
+```
+
+### **Настройка для минимизации влияния:**
+
+```bash
+# Ключевые параметры:
+pgcopydb copy table \
+  --source "$SOURCE" \
+  --table "huge_table" \
+  --split-tables-larger-than "1GB" \
+  --split-tables-chunk-size "100000 rows" \  # Размер чанка
+  --sleep 100 \  # Пауза 100ms между чанками (ms)
+  --jobs 2 \     # Только 2 параллельных чанка
+  --max-rate "50MB/s"  # Ограничение скорости
+```
+
+## **2. Можно ли копировать не всю базу, а набор таблиц?**
+
+**Да, абсолютно!** Это одна из сильных сторон pgcopydb.
+
+### **Способ 1: Копирование конкретных таблиц**
+
+```bash
+# Копируем только нужные таблицы
+pgcopydb copy table \
+  --source "$SOURCE" \
+  --target-dir "/snapshot" \
+  --table "public.users" \
+  --table "public.orders" \
+  --table "public.order_items" \
+  --exclude-table "public.audit_log"  # Исключаем ненужные
+```
+
+### **Способ 2: Использование фильтров**
+
+```bash
+# По регулярным выражениям
+pgcopydb copy tables \
+  --source "$SOURCE" \
+  --target-dir "/snapshot" \
+  --filter "public.user_.*"  # Все таблицы, начинающиеся с user_
+  
+# Исключение по паттерну
+pgcopydb copy tables \
+  --source "$SOURCE" \
+  --target-dir "/snapshot" \
+  --exclude ".*_backup" \  # Исключаем backup таблицы
+  --exclude ".*_temp"      # И temp таблицы
+```
+
+### **Способ 3: Список из файла**
+
+```bash
+# Создаем файл с таблицами
+cat > tables.list << EOF
+public.users
+public.orders
+public.products
+schema2.customers
+EOF
+
+# Используем файл
+pgcopydb copy tables \
+  --source "$SOURCE" \
+  --target-dir "/snapshot" \
+  --tables-list "tables.list"
+```
+
+### **Способ 4: Копирование только схемы**
+
+```bash
+# Только структура, без данных
+pgcopydb copy schema \
+  --source "$SOURCE" \
+  --target-dir "/snapshot" \
+  --schema-only \
+  --table "public.users" \
+  --table "public.orders"
+```
+
+## **Практический пример: CDC для StarRocks**
+
+Допустим, у вас есть схема для аналитики:
+
+```bash
+#!/bin/bash
+# Копируем только таблицы для витрин данных
+
+TABLES=(
+  "public.users"
+  "public.orders" 
+  "public.products"
+  "public.categories"
+  "logistics.deliveries"
+  "logistics.warehouses"
+)
+
+# Формируем команду
+CMD="pgcopydb copy tables --source '$SOURCE' --target-dir '/cdc_snapshot'"
+
+for table in "${TABLES[@]}"; do
+  CMD="$CMD --table '$table'"
+done
+
+# Добавляем настройки для прода
+CMD="$CMD \
+  --split-tables-larger-than '500MB' \
+  --jobs 4 \
+  --sleep 50 \
+  --resume \
+  --progress"
+
+# Выполняем
+eval $CMD
+```
+
+## **Пример с Debezium: Синхронизация подмножества таблиц**
+
+```bash
+#!/bin/bash
+# Сценарий для Debezium → StarRocks
+
+# 1. Фиксируем точку консистентности
+START_LSN=$(psql "$SOURCE" -t -c "SELECT pg_current_wal_lsn()")
+echo "Начальный LSN: $START_LSN"
+
+# 2. Запускаем Debezium только для нужных таблиц
+DEBEZIUM_CONFIG='{
+  "name": "starrocks-cdc",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "database.hostname": "source-db",
+    "database.dbname": "mydb",
+    "snapshot.mode": "never",
+    "table.include.list": "public.users,public.orders,public.products",
+    "publication.autocreate.mode": "filtered"
+  }
+}'
+
+curl -X POST http://kafka-connect:8083/connectors \
+  -H "Content-Type: application/json" \
+  -d "$DEBEZIUM_CONFIG"
+
+# 3. Копируем только эти таблицы через pgcopydb
+pgcopydb copy tables \
+  --source "$SOURCE" \
+  --target-dir "/snapshot" \
+  --table "public.users" \
+  --table "public.orders" \
+  --table "public.products" \
+  --snapshot "auto" \
+  --create-slot \
+  --plugin pgoutput \
+  --split-tables-larger-than "100MB" \
+  --jobs 8
+
+# 4. Загружаем в StarRocks
+# Каждая таблица в свой поток
+for table in users orders products; do
+  ./load_to_starrocks.sh "/snapshot/public.$table" &
+done
+wait
+
+# 5. Настраиваем Routine Load для каждой таблицы
+for table in users orders products; do
+  mysql -h starrocks -e "
+    CREATE ROUTINE LOAD analytics.${table}_cdc ON ${table}
+    FROM KAFKA (...)
+    PROPERTIES (...);
+  "
+done
+```
+
+## **Расширенный пример: Копирование с фильтрацией данных**
+
+```bash
+# Иногда нужно не всю таблицу, а фильтрованные данные
+# pgcopydb позволяет это через --where
+
+pgcopydb copy table \
+  --source "$SOURCE" \
+  --target-dir "/snapshot" \
+  --table "public.orders" \
+  --where "created_at >= '2024-01-01'" \  # Только за 2024 год
+  --where "status IN ('completed', 'shipped')" \  # Только завершенные
+  --split-tables-chunk-size "date_range" \  # Авто-разбивка по датам
+  --chunk-size "1 month"  # Чанки по месяцам
+```
+
+## **Копирование связанных таблиц с foreign keys**
+
+```bash
+# Автоматическое определение зависимостей
+pgcopydb copy tables \
+  --source "$SOURCE" \
+  --target-dir "/snapshot" \
+  --table "public.orders" \
+  --table "public.order_items" \
+  --follow-fkeys \  # Автоматически добавит таблицы по foreign keys
+  --fkeys-depth 2   # Уровень вложенности
+  
+# Это скопирует:
+# 1. orders
+# 2. order_items (явно указана)
+# 3. products (через foreign key из order_items)
+# 4. users (через foreign key из orders)
+```
+
+## **Резюме по блокировкам:**
+
+### **Что блокирует pgcopydb:**
+1. **ACCESS SHARE LOCK** на таблицу (только на время чанка)
+2. **Никаких эксклюзивных блокировок** (не мешает INSERT/UPDATE/DELETE)
+3. **Короткие блокировки** (чанки по 100к строк ≈ секунды)
+
+### **Что НЕ блокирует:**
+1. **Обычные DML** (INSERT, UPDATE, DELETE, SELECT)
+2. **Автовакуум** (может работать параллельно)
+3. **CREATE INDEX CONCURRENTLY**
+4. **ALTER TABLE ADD COLUMN** (но не DROP COLUMN)
+
+## **Резюме по выбору таблиц:**
+
+### **Можно:**
+✅ Конкретные таблицы по имени
+✅ По регулярным выражениям
+✅ Из файла со списком
+✅ С фильтрацией данных (WHERE)
+✅ С автоматическим включением зависимых таблиц
+✅ Только схема (без данных)
+
+### **Нельзя (без доработки):**
+❌ Динамический SQL в WHERE (только константы)
+❌ Копирование подзапросов/VIEW как таблиц
+❌ Автоматическое определение "горячих" таблиц по статистике
+
+## **Рекомендация для вашего кейса:**
+
+```bash
+# 1. Определите точные таблицы для StarRocks
+TABLES_FOR_ANALYTICS="
+  dim_users
+  dim_products
+  fact_orders
+  fact_payments
+  fact_sessions
+"
+
+# 2. Копируйте с минимальными блокировками
+pgcopydb copy tables \
+  --source "host=prod-db" \
+  --target-dir "/mnt/nas/snapshot_$(date +%Y%m%d)" \
+  --tables-list <(echo "$TABLES_FOR_ANALYTICS") \
+  --split-tables-larger-than "200MB" \
+  --sleep 100 \        # 100ms пауза между чанками
+  --jobs $(($(nproc) / 2)) \  # Половина ядер
+  --max-rate "30MB/s" \       # Не грузить сеть
+  --resume \
+  --progress
+
+# 3. Параллельно запустите Debezium для этих же таблиц
+# 4. Загрузите снапшот в StarRocks
+# 5. Настройте Routine Load с правильного offset
+```
+
+**Итог:** pgcopydb — идеальный инструмент для вашего сценария. Он позволяет:
+- Копировать только нужные таблицы
+- Минимизировать влияние на продакшен
+- Интегрироваться с Debezium CDC
+- Автоматически чанковать большие таблицы
