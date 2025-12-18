@@ -10,7 +10,7 @@ SHOW PROC '/backends';
 CANCEL DECOMMISSION BACKEND "sl11-demostand-sr-01:9050";
 
 -- Удаляем BE (осторожно, убедитесь, что это единственный BE!)
-ALTER SYSTEM DROP BACKEND "srv1:9050" FORCE;
+ALTER SYSTEM DROP BACKEND "srv:9050" FORCE;
 
 -- Добавляем его снова
 ALTER SYSTEM ADD BACKEND "srv:9050";
