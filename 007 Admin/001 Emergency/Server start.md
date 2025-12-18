@@ -7,7 +7,7 @@
 ```bash
 SHOW PROC '/backends';
 
-CANCEL DECOMMISSION BACKEND "sl11-demostand-sr-01:9050";
+CANCEL DECOMMISSION BACKEND "srv:9050";
 
 -- Удаляем BE (осторожно, убедитесь, что это единственный BE!)
 ALTER SYSTEM DROP BACKEND "srv:9050" FORCE;
