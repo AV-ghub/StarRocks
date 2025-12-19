@@ -63,7 +63,7 @@ parallelism.default: 4
 2.  Стартуете кластер: `./bin/start-cluster.sh`. Запустится **1 JobManager** и **1 TaskManager** с 4 ГБ и 4 слотами.
 3.  Чтобы добавить второй TaskManager (на 2 ГБ), нужно запустить его **вручную** с переопределением параметров:
     ```bash
-    ./bin/taskmanager.sh start --host localhost \
+    ./taskmanager.sh start --host localhost \
         -Dtaskmanager.memory.process.size=2048m \
         -Dtaskmanager.numberOfTaskSlots=2
     ```
