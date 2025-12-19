@@ -28,15 +28,15 @@
 flowchart TD
     subgraph S1[Сценарий 1: Проще и надежнее]
         direction LR
-        TM1_1[TaskManager 1<br>4 ГБ | 4 слота]
-        TM1_2[TaskManager 2<br>2 ГБ | 2 слота]
+        TM1_1[TaskManager 1<br>4 ГБ - 4 слота]
+        TM1_2[TaskManager 2<br>2 ГБ - 2 слота]
     end
 
     subgraph S2[Сценарий 2: Максимальная изоляция]
         direction LR
-        TM2_1[TaskManager 1<br>2 ГБ | 2 слота]
-        TM2_2[TaskManager 2<br>2 ГБ | 2 слота]
-        TM2_3[TaskManager 3<br>2 ГБ | 2 слота]
+        TM2_1[TaskManager 1<br>2 ГБ - 2 слота]
+        TM2_2[TaskManager 2<br>2 ГБ - 2 слота]
+        TM2_3[TaskManager 3<br>2 ГБ - 2 слота]
     end
 
     S1 --> A1["Итого: 6 слотов<br>Простота управления"]
