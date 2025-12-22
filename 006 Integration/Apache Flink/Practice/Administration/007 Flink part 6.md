@@ -1,4 +1,4 @@
-# StarRocks DDL из схемы Postgres
+# StarRocks DDL из схемы PostgreSQL
 ## 🎯 Полный скрипт для генерации StarRocks DDL из PostgreSQL
 
 ```sql
